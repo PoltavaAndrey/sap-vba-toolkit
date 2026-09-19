@@ -11,55 +11,56 @@ Option Explicit
 
 '==============================================================================
 ' Class:       clsSapConnector
-' Назначение:  Подключение к уже запущенному SAP GUI через SAP GUI Scripting
-'              (SAP GUI Scripting API / "wdyauto"). Класс отвечает только
-'              за установление соединения и получение GuiSession; работа
-'              с элементами управления вынесена в clsSapSession.
+' Purpose:     Connects to an already running SAP GUI instance via SAP GUI
+'              Scripting. This class is only responsible for establishing the
+'              connection and obtaining a GuiSession; working with individual
+'              controls is delegated to clsSapSession.
 '
-' Предварительные условия:
-'   1. В SAP Logon включен и разрешен скриптинг:
-'      SAP Logon -> Параметры -> Скриптинг -> "Включить скриптинг"
-'      (плюс серверная опция RZ11 sapgui/user_scripting = TRUE)
-'   2. Пользователь уже вошел в систему в одном из открытых окон SAP GUI.
+' Prerequisites:
+'   1. Scripting must be enabled in SAP Logon:
+'      SAP Logon -> Options -> Accessibility & Scripting -> "Enable scripting"
+'      (plus the server-side profile parameter
+'      sapgui/user_scripting = TRUE, set via transaction RZ11)
+'   2. The user must already be logged on in one of the open SAP GUI windows.
 '
-' Пример использования:
+' Example:
 '   Dim connector As clsSapConnector
 '   Set connector = New clsSapConnector
 '   connector.Init logger
 '
 '   If connector.Connect() Then
 '       Dim sapSession As clsSapSession
-'       Set sapSession = connector.GetSession(0) ' первая открытая сессия
+'       Set sapSession = connector.GetSession(0) ' first open session
 '   End If
 '==============================================================================
 
 Private Const MODULE_NAME As String = "clsSapConnector"
 
 Private mLogger As ILogger
-Private mSapGuiAuto As Object   ' SAPGUI (GuiApplication) COM-объект
+Private mSapGuiAuto As Object   ' SAPGUI (GuiApplication) COM object
 Private mConnection As Object   ' GuiConnection
 Private mIsConnected As Boolean
 
 ' -----------------------------------------------------------------------------
-' Инициализация зависимостей (простая форма DI, т.к. в VBA нет конструкторов
-' с параметрами).
+' Injects dependencies (a simple form of DI, since VBA has no parameterized
+' constructors).
 ' -----------------------------------------------------------------------------
 Public Sub Init(ByVal Logger As ILogger)
     Set mLogger = Logger
 End Sub
 
 ' -----------------------------------------------------------------------------
-' Подключается к первому доступному запущенному окну SAP GUI.
-' Возвращает True при успехе.
+' Connects to the first available running SAP GUI window.
+' Returns True on success.
 ' -----------------------------------------------------------------------------
 Public Function Connect() As Boolean
     On Error GoTo ErrHandler
 
-    mLogger.Log llInfo, MODULE_NAME & ".Connect: попытка подключения к SAP GUI"
+    mLogger.Log llInfo, MODULE_NAME & ".Connect: attempting to connect to SAP GUI"
 
     If Not IsSapGuiRunning() Then
         mLogger.Log llError, MODULE_NAME & _
-            ".Connect: SAP Logon не запущен или скриптинг недоступен"
+            ".Connect: SAP Logon is not running or scripting is unavailable"
         Connect = False
         Exit Function
     End If
@@ -70,7 +71,7 @@ Public Function Connect() As Boolean
 
     If mSapGuiAuto.Children.Count = 0 Then
         mLogger.Log llError, MODULE_NAME & _
-            ".Connect: нет открытых соединений SAP (ни одно окно не залогинено)"
+            ".Connect: no open SAP connections (no window is logged on)"
         Connect = False
         Exit Function
     End If
@@ -78,27 +79,27 @@ Public Function Connect() As Boolean
     Set mConnection = mSapGuiAuto.Children(0)
     mIsConnected = True
 
-    mLogger.Log llInfo, MODULE_NAME & ".Connect: успешно подключено. " & _
-        "Соединение: " & mConnection.Description
+    mLogger.Log llInfo, MODULE_NAME & ".Connect: connected successfully. " & _
+        "Connection: " & mConnection.Description
     Connect = True
     Exit Function
 
 ErrHandler:
-    mLogger.Log llError, MODULE_NAME & ".Connect: ошибка " & Err.Number & _
+    mLogger.Log llError, MODULE_NAME & ".Connect: error " & Err.Number & _
         " - " & Err.Description
     Connect = False
 End Function
 
 ' -----------------------------------------------------------------------------
-' Возвращает обертку clsSapSession над GuiSession по индексу.
-' По умолчанию - первая (основная) сессия текущего соединения.
+' Returns a clsSapSession wrapper around a GuiSession by index.
+' Defaults to index 0 - the first (primary) session of the current connection.
 ' -----------------------------------------------------------------------------
 Public Function GetSession(Optional ByVal SessionIndex As Long = 0) As clsSapSession
     On Error GoTo ErrHandler
 
     If Not mIsConnected Then
         mLogger.Log llError, MODULE_NAME & _
-            ".GetSession: нет активного соединения. Сначала вызовите Connect()"
+            ".GetSession: no active connection. Call Connect() first"
         Set GetSession = Nothing
         Exit Function
     End If
@@ -110,11 +111,11 @@ Public Function GetSession(Optional ByVal SessionIndex As Long = 0) As clsSapSes
     wrapper.Init rawSession, mLogger
 
     Set GetSession = wrapper
-    mLogger.Log llInfo, MODULE_NAME & ".GetSession: получена сессия #" & SessionIndex
+    mLogger.Log llInfo, MODULE_NAME & ".GetSession: obtained session #" & SessionIndex
     Exit Function
 
 ErrHandler:
-    mLogger.Log llError, MODULE_NAME & ".GetSession: ошибка " & Err.Number & _
+    mLogger.Log llError, MODULE_NAME & ".GetSession: error " & Err.Number & _
         " - " & Err.Description
     Set GetSession = Nothing
 End Function
@@ -124,9 +125,9 @@ Public Property Get IsConnected() As Boolean
 End Property
 
 ' -----------------------------------------------------------------------------
-' Проверка, что процесс SAP Logon (saplogon.exe) запущен.
-' Это не гарантирует включенный скриптинг, но отсекает очевидный случай,
-' когда SAP вообще не открыт - и дает более понятное сообщение об ошибке.
+' Checks whether the SAP Logon process (saplogon.exe) is running.
+' This does not guarantee that scripting is enabled, but it rules out the
+' obvious case where SAP is not open at all, giving a clearer error message.
 ' -----------------------------------------------------------------------------
 Private Function IsSapGuiRunning() As Boolean
     On Error Resume Next
