@@ -11,14 +11,14 @@ Option Explicit
 
 '==============================================================================
 ' Class:       clsAppController
-' Назначение:  Фасад приложения. Собирает вместе логгер, коннектор SAP и
-'              классы работы с Excel, и предоставляет один понятный метод
-'              Run() для запуска сценария. Это единственное место, где
-'              создаются конкретные реализации (New clsLogger, New
-'              clsSapConnector и т.д.) - остальной код общается только
-'              с интерфейсами/обертками.
+' Purpose:     Application facade. Wires together the logger, the SAP
+'              connector, and the Excel classes, and exposes one clear Run()
+'              method to kick off a scenario. This is the only place where
+'              concrete implementations are created (New clsLogger, New
+'              clsSapConnector, etc.) - the rest of the code talks only to
+'              interfaces/wrappers.
 '
-' Пример использования (см. также modMain.bas):
+' Example (see also modMain.bas):
 '   Dim app As New clsAppController
 '   app.Init
 '   app.Run "C:\data\input.xlsx", "C:\data\output.xlsx"
@@ -37,41 +37,42 @@ Public Sub Init()
     Set mConnector = New clsSapConnector
     mConnector.Init mLogger
 
-    mLogger.Log llInfo, MODULE_NAME & ".Init: приложение инициализировано"
+    mLogger.Log llInfo, MODULE_NAME & ".Init: application initialized"
 End Sub
 
 ' -----------------------------------------------------------------------------
-' Пример сквозного сценария:
-'   1. Читаем входной Excel-файл со списком данных для обработки в SAP.
-'   2. Подключаемся к SAP GUI и для каждой строки выполняем транзакцию.
-'   3. Пишем результат (успех/ошибка) в новый Excel-отчет.
+' Example end-to-end scenario:
+'   1. Read an input Excel file with a list of items to process in SAP.
+'   2. Connect to SAP GUI and run a transaction for every row.
+'   3. Write the outcome (success/error) into a new Excel report.
 '
-' Метод намеренно оставлен как шаблон - замените TCode, ID полей SAP и
-' структуру входного файла на реальные из вашего процесса.
+' This method is intentionally left as a template - replace the transaction
+' code, SAP field IDs and input file structure with the real ones from your
+' process.
 ' -----------------------------------------------------------------------------
 Public Sub Run(ByVal InputFilePath As String, ByVal OutputFilePath As String)
     On Error GoTo ErrHandler
 
-    mLogger.Log llInfo, "=== Запуск сценария ==="
+    mLogger.Log llInfo, "=== Scenario started ==="
 
-    ' 1. Чтение входных данных ------------------------------------------------
+    ' 1. Read input data -------------------------------------------------------
     Dim reader As New clsExcelReader
     reader.Init mLogger
 
     If Not reader.OpenFile(InputFilePath) Then
-        mLogger.Log llError, "Не удалось открыть входной файл. Остановка."
+        mLogger.Log llError, "Could not open the input file. Stopping."
         Exit Sub
     End If
 
     Dim records As Collection
-    Set records = reader.ReadSheetAsRecords("Лист1")
+    Set records = reader.ReadSheetAsRecords("Sheet1")
     reader.CloseFile
 
-    mLogger.Log llInfo, "Прочитано строк: " & records.Count
+    mLogger.Log llInfo, "Rows read: " & records.Count
 
-    ' 2. Подключение к SAP и обработка строк ----------------------------------
+    ' 2. Connect to SAP and process rows ---------------------------------------
     If Not mConnector.Connect() Then
-        mLogger.Log llError, "Не удалось подключиться к SAP GUI. Остановка."
+        mLogger.Log llError, "Could not connect to SAP GUI. Stopping."
         Exit Sub
     End If
 
@@ -81,7 +82,7 @@ Public Sub Run(ByVal InputFilePath As String, ByVal OutputFilePath As String)
     Dim writer As New clsExcelWriter
     writer.Init mLogger
     writer.CreateNewWorkbook
-    writer.WriteHeaders "Результат", Array("Материал", "Статус", "Сообщение SAP")
+    writer.WriteHeaders "Result", Array("Material", "Status", "SAP message")
 
     Dim i As Long
     Dim rec As Object
@@ -91,22 +92,22 @@ Public Sub Run(ByVal InputFilePath As String, ByVal OutputFilePath As String)
         ProcessSingleRecord sapSession, rec, writer, i
     Next rec
 
-    ' 3. Сохранение отчета -----------------------------------------------------
-    writer.AutoFitColumns "Результат"
+    ' 3. Save the report --------------------------------------------------------
+    writer.AutoFitColumns "Result"
     writer.SaveAs OutputFilePath
     writer.CloseFile
 
-    mLogger.Log llInfo, "=== Сценарий завершен. Отчет: " & OutputFilePath & " ==="
+    mLogger.Log llInfo, "=== Scenario finished. Report: " & OutputFilePath & " ==="
     Exit Sub
 
 ErrHandler:
-    mLogger.Log llError, MODULE_NAME & ".Run: непредвиденная ошибка " & _
+    mLogger.Log llError, MODULE_NAME & ".Run: unexpected error " & _
         Err.Number & " - " & Err.Description
 End Sub
 
 ' -----------------------------------------------------------------------------
-' Обработка одной строки входных данных в SAP. Пример для транзакции ME21N
-' (создание заказа на закупку) - замените под свою транзакцию и поля.
+' Processes a single input row in SAP. Shown here for transaction ME21N
+' (create purchase order) - replace with your own transaction and fields.
 ' -----------------------------------------------------------------------------
 Private Sub ProcessSingleRecord(ByVal sapSession As clsSapSession, _
                                  ByVal rec As Object, _
@@ -114,9 +115,9 @@ Private Sub ProcessSingleRecord(ByVal sapSession As clsSapSession, _
                                  ByVal OutputRow As Long)
 
     Dim material As String
-    material = CStr(rec("Материал"))
+    material = CStr(rec("Material"))
 
-    mLogger.Log llInfo, "Обработка материала: " & material
+    mLogger.Log llInfo, "Processing material: " & material
 
     sapSession.StartTransaction "ME21N"
     sapSession.SetText "wnd[0]/usr/ctxtEKKO-BSART", "NB"
@@ -127,11 +128,89 @@ Private Sub ProcessSingleRecord(ByVal sapSession As clsSapSession, _
     statusText = sapSession.GetStatusBarText()
 
     Dim isOk As Boolean
-    isOk = (InStr(1, LCase(statusText), "error") = 0) And _
-           (InStr(1, statusText, "ошибк") = 0)
+    isOk = (InStr(1, LCase(statusText), "error") = 0)
 
-    writer.WriteRow "Результат", OutputRow, _
-        Array(material, IIf(isOk, "OK", "ОШИБКА"), statusText)
+    writer.WriteRow "Result", OutputRow, _
+        Array(material, IIf(isOk, "OK", "ERROR"), statusText)
 
     sapSession.EndTransaction
+End Sub
+
+' -----------------------------------------------------------------------------
+' Example scenario built around SAP table controls and the array matcher:
+'   1. Open a SAP transaction that shows a table control (e.g. a reservation
+'      list, or a stock overview).
+'   2. Extract the on-screen table into a Variant array via clsSapTable.
+'   3. Repeat for the second table (or read it from an Excel file instead).
+'   4. Run clsStockReservationMatcher.FindMatches to see which reservations
+'      can be closed with the available stock, and export the result.
+'
+' This is a template showing how the pieces fit together - the actual
+' transaction, table control ID and column IDs must be adjusted to match
+' your SAP system.
+' -----------------------------------------------------------------------------
+Public Sub RunStockMatchingFromSapTables(ByVal ReservationsTableId As String, _
+                                          ByVal StockTableId As String, _
+                                          ByVal OutputFilePath As String)
+    On Error GoTo ErrHandler
+
+    mLogger.Log llInfo, "=== Stock matching scenario started ==="
+
+    If Not mConnector.Connect() Then
+        mLogger.Log llError, "Could not connect to SAP GUI. Stopping."
+        Exit Sub
+    End If
+
+    Dim sapSession As clsSapSession
+    Set sapSession = mConnector.GetSession(0)
+
+    ' Adjust the column IDs to match the technical names of your table
+    ' controls (found via SAP's "Script Recording and Playback" helper).
+    Dim reservationColumns As Variant
+    reservationColumns = Array("WERKS", "LGORT", "MATNR", "PSPNR", "MENGE")
+
+    Dim stockColumns As Variant
+    stockColumns = Array("WERKS", "LGORT", "MATNR", "PSPNR", "MENGE")
+
+    Dim reservationsTable As clsSapTable
+    Set reservationsTable = sapSession.GetTable(ReservationsTableId)
+    Dim reservations As Variant
+    reservations = reservationsTable.ReadAllRows(reservationColumns)
+
+    Dim stockTable As clsSapTable
+    Set stockTable = sapSession.GetTable(StockTableId)
+    Dim stock As Variant
+    stock = stockTable.ReadAllRows(stockColumns)
+
+    Dim matcher As New clsStockReservationMatcher
+    matcher.Init mLogger
+
+    Dim leftoverReservations As Variant, leftoverStock As Variant
+    Dim matches As Variant
+    matches = matcher.FindMatches(reservations, stock, leftoverReservations, leftoverStock)
+
+    Dim writer As New clsExcelWriter
+    writer.Init mLogger
+    writer.CreateNewWorkbook
+
+    writer.WriteHeaders "Matches", Array("Plant", "StorageLocation", "Material", _
+        "Project", "QtyOnStock", "QtyReserved", "ReservationProject", "ReservationWarehouse")
+    If Not IsEmpty(matches) Then writer.WriteArray "Matches", "A2", matches
+
+    If Not IsEmpty(leftoverReservations) Then
+        writer.WriteHeaders "UnclosedReservations", Array("Plant", "Warehouse", "Material", _
+            "Project", "OriginalQty", "RemainingQty")
+        writer.WriteArray "UnclosedReservations", "A2", leftoverReservations
+    End If
+
+    writer.AutoFitColumns "Matches"
+    writer.SaveAs OutputFilePath
+    writer.CloseFile
+
+    mLogger.Log llInfo, "=== Stock matching scenario finished. Report: " & OutputFilePath & " ==="
+    Exit Sub
+
+ErrHandler:
+    mLogger.Log llError, MODULE_NAME & ".RunStockMatchingFromSapTables: unexpected error " & _
+        Err.Number & " - " & Err.Description
 End Sub
