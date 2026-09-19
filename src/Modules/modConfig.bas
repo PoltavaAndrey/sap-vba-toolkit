@@ -3,16 +3,16 @@ Option Explicit
 
 '==============================================================================
 ' Module:      modConfig
-' Назначение:  Централизованные константы и настройки проекта.
-'              Меняйте значения здесь, а не по всему коду.
+' Purpose:     Centralized constants and project settings. Change values
+'              here rather than scattering them across the codebase.
 '==============================================================================
 
 Public Const APP_NAME As String = "SAP VBA Toolkit"
-Public Const APP_VERSION As String = "0.1.0"
+Public Const APP_VERSION As String = "0.2.0"
 
-' Пути по умолчанию (используются, если пользователь не указал свои)
+' Default paths (used if the caller does not supply its own).
 Public Const DEFAULT_LOG_SUBFOLDER As String = "Logs"
 
-' Пример путей к файлам - настройте под свою задачу или выносите в UI/аргументы
+' Example file paths - adjust to your task, or move to a UI/parameters.
 Public Const DEFAULT_INPUT_FILE As String = "C:\Data\input.xlsx"
 Public Const DEFAULT_OUTPUT_FILE As String = "C:\Data\output.xlsx"
