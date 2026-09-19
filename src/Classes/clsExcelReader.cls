@@ -11,16 +11,16 @@ Option Explicit
 
 '==============================================================================
 ' Class:       clsExcelReader
-' Назначение:  Открытие сторонних (внешних) книг Excel и чтение данных из них
-'              без изменения активной книги пользователя. Открывает файлы
-'              в фоновом режиме (без экрана) и гарантированно закрывает их.
+' Purpose:     Opens external (third-party) Excel workbooks and reads data
+'              from them without touching the user's active workbook. Files
+'              are opened in the background (invisible) and always closed.
 '
-' Пример использования:
+' Example:
 '   Dim reader As New clsExcelReader
 '   reader.Init logger
 '   If reader.OpenFile("C:\data\input.xlsx") Then
 '       Dim data As Variant
-'       data = reader.ReadRange("Лист1", "A1:C100")
+'       data = reader.ReadRange("Sheet1", "A1:C100")
 '       reader.CloseFile
 '   End If
 '==============================================================================
@@ -28,7 +28,7 @@ Option Explicit
 Private Const MODULE_NAME As String = "clsExcelReader"
 
 Private mLogger As ILogger
-Private mExcelApp As Object      ' отдельный экземпляр Excel.Application
+Private mExcelApp As Object      ' separate Excel.Application instance
 Private mWorkbook As Object      ' Excel.Workbook
 Private mOwnsAppInstance As Boolean
 Private mFilePath As String
@@ -38,14 +38,14 @@ Public Sub Init(ByVal Logger As ILogger)
 End Sub
 
 ' -----------------------------------------------------------------------------
-' Открывает файл Excel только для чтения, в отдельном скрытом экземпляре
-' приложения (чтобы не мешать книге, из которой запущен макрос).
+' Opens a workbook read-only, in a separate hidden Excel instance (so it does
+' not interfere with the workbook the macro is running from).
 ' -----------------------------------------------------------------------------
 Public Function OpenFile(ByVal FilePath As String) As Boolean
     On Error GoTo ErrHandler
 
     If Len(Dir(FilePath)) = 0 Then
-        LogErr "OpenFile", "Файл не найден: " & FilePath
+        LogErr "OpenFile", "File not found: " & FilePath
         OpenFile = False
         Exit Function
     End If
@@ -58,7 +58,7 @@ Public Function OpenFile(ByVal FilePath As String) As Boolean
     Set mWorkbook = mExcelApp.Workbooks.Open(FilePath, ReadOnly:=True)
     mFilePath = FilePath
 
-    LogInfo "OpenFile: открыт файл " & FilePath
+    LogInfo "OpenFile: opened file " & FilePath
     OpenFile = True
     Exit Function
 
@@ -68,7 +68,7 @@ ErrHandler:
 End Function
 
 ' -----------------------------------------------------------------------------
-' Считывает диапазон в двумерный массив Variant (индексация с 1).
+' Reads a range into a 2D Variant array (1-based indexing).
 ' -----------------------------------------------------------------------------
 Public Function ReadRange(ByVal SheetName As String, ByVal RangeAddress As String) As Variant
     On Error GoTo ErrHandler
@@ -86,7 +86,7 @@ ErrHandler:
 End Function
 
 ' -----------------------------------------------------------------------------
-' Считывает лист целиком (по используемому диапазону) как массив.
+' Reads an entire sheet (its used range) as an array.
 ' -----------------------------------------------------------------------------
 Public Function ReadSheet(ByVal SheetName As String) As Variant
     On Error GoTo ErrHandler
@@ -104,9 +104,9 @@ ErrHandler:
 End Function
 
 ' -----------------------------------------------------------------------------
-' Читает лист как список Collection словарей (заголовки из первой строки).
-' Удобно для построчной обработки без работы с индексами массива.
-' Требует Microsoft Scripting Runtime (или используйте Collection/Object).
+' Reads a sheet as a Collection of dictionaries (headers taken from the first
+' row). Convenient for row-by-row processing without juggling array indices.
+' Uses Scripting.Dictionary (late-bound, no reference required).
 ' -----------------------------------------------------------------------------
 Public Function ReadSheetAsRecords(ByVal SheetName As String) As Collection
     Dim result As New Collection
@@ -143,7 +143,7 @@ Public Function ReadSheetAsRecords(ByVal SheetName As String) As Collection
 End Function
 
 ' -----------------------------------------------------------------------------
-' Получить значение одной ячейки.
+' Gets the value of a single cell.
 ' -----------------------------------------------------------------------------
 Public Function GetCellValue(ByVal SheetName As String, ByVal CellAddress As String) As Variant
     On Error GoTo ErrHandler
@@ -156,7 +156,7 @@ ErrHandler:
 End Function
 
 ' -----------------------------------------------------------------------------
-' Закрывает книгу и завершает временный экземпляр Excel.
+' Closes the workbook and quits the temporary Excel instance.
 ' -----------------------------------------------------------------------------
 Public Sub CloseFile()
     On Error Resume Next
@@ -171,7 +171,7 @@ Public Sub CloseFile()
         Set mExcelApp = Nothing
     End If
 
-    LogInfo "CloseFile: файл закрыт (" & mFilePath & ")"
+    LogInfo "CloseFile: file closed (" & mFilePath & ")"
     On Error GoTo 0
 End Sub
 
@@ -179,7 +179,7 @@ Private Sub Class_Terminate()
     Me.CloseFile
 End Sub
 
-' --- Внутренние помощники ---------------------------------------------------
+' --- Internal helpers ---------------------------------------------------------
 
 Private Sub LogInfo(ByVal Message As String)
     If Not mLogger Is Nothing Then mLogger.Log llInfo, MODULE_NAME & ": " & Message
