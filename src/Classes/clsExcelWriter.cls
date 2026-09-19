@@ -11,16 +11,16 @@ Option Explicit
 
 '==============================================================================
 ' Class:       clsExcelWriter
-' Назначение:  Создание новых книг Excel и запись в них данных (например,
-'              итогового отчета по результатам обработки в SAP).
-'              Работает в отдельном (по умолчанию скрытом) экземпляре Excel.
+' Purpose:     Creates new Excel workbooks and writes data into them (e.g. a
+'              summary report of SAP processing results). Works in a separate
+'              (hidden by default) Excel instance.
 '
-' Пример использования:
+' Example:
 '   Dim writer As New clsExcelWriter
 '   writer.Init logger
 '   writer.CreateNewWorkbook
-'   writer.WriteHeaders "Отчет", Array("Дата", "Материал", "Статус")
-'   writer.WriteRow "Отчет", 2, Array(Date, "1000123", "OK")
+'   writer.WriteHeaders "Report", Array("Date", "Material", "Status")
+'   writer.WriteRow "Report", 2, Array(Date, "1000123", "OK")
 '   writer.SaveAs "C:\output\report.xlsx"
 '   writer.CloseFile
 '==============================================================================
@@ -38,7 +38,7 @@ Public Sub Init(ByVal Logger As ILogger, Optional ByVal Visible As Boolean = Fal
 End Sub
 
 ' -----------------------------------------------------------------------------
-' Создает новую пустую книгу в отдельном экземпляре Excel.
+' Creates a new blank workbook in a separate Excel instance.
 ' -----------------------------------------------------------------------------
 Public Function CreateNewWorkbook() As Boolean
     On Error GoTo ErrHandler
@@ -49,7 +49,7 @@ Public Function CreateNewWorkbook() As Boolean
 
     Set mWorkbook = mExcelApp.Workbooks.Add
 
-    LogInfo "CreateNewWorkbook: создана новая книга"
+    LogInfo "CreateNewWorkbook: new workbook created"
     CreateNewWorkbook = True
     Exit Function
 
@@ -59,7 +59,7 @@ ErrHandler:
 End Function
 
 ' -----------------------------------------------------------------------------
-' Возвращает лист по имени, создавая его при отсутствии.
+' Returns a sheet by name, creating it if it does not exist yet.
 ' -----------------------------------------------------------------------------
 Public Function GetOrAddSheet(ByVal SheetName As String) As Object
     On Error Resume Next
@@ -76,7 +76,7 @@ Public Function GetOrAddSheet(ByVal SheetName As String) As Object
 End Function
 
 ' -----------------------------------------------------------------------------
-' Записывает заголовки в первую строку листа (создает лист при необходимости).
+' Writes headers into the first row of a sheet (creating the sheet if needed).
 ' -----------------------------------------------------------------------------
 Public Sub WriteHeaders(ByVal SheetName As String, ByVal Headers As Variant)
     On Error GoTo ErrHandler
@@ -98,7 +98,8 @@ ErrHandler:
 End Sub
 
 ' -----------------------------------------------------------------------------
-' Записывает одну строку данных (массив значений) в указанную строку листа.
+' Writes a single row of data (an array of values) into the given row of a
+' sheet.
 ' -----------------------------------------------------------------------------
 Public Sub WriteRow(ByVal SheetName As String, ByVal RowIndex As Long, ByVal Values As Variant)
     On Error GoTo ErrHandler
@@ -117,8 +118,9 @@ ErrHandler:
 End Sub
 
 ' -----------------------------------------------------------------------------
-' Записывает двумерный массив целиком, начиная с левой верхней ячейки.
-' Удобно для выгрузки данных, прочитанных clsExcelReader.ReadRange/ReadSheet.
+' Writes a whole 2D array starting at the given top-left cell. Convenient for
+' dumping data produced by clsExcelReader.ReadRange/ReadSheet or by
+' clsStockReservationMatcher.FindMatches.
 ' -----------------------------------------------------------------------------
 Public Sub WriteArray(ByVal SheetName As String, ByVal TopLeftCell As String, ByVal Data As Variant)
     On Error GoTo ErrHandler
@@ -143,7 +145,7 @@ ErrHandler:
 End Sub
 
 ' -----------------------------------------------------------------------------
-' Автоподбор ширины столбцов на листе.
+' Auto-fits column widths on a sheet.
 ' -----------------------------------------------------------------------------
 Public Sub AutoFitColumns(ByVal SheetName As String)
     On Error Resume Next
@@ -152,8 +154,8 @@ Public Sub AutoFitColumns(ByVal SheetName As String)
 End Sub
 
 ' -----------------------------------------------------------------------------
-' Сохраняет книгу по указанному пути. Формат определяется по расширению
-' (.xlsx = 51, .xlsm = 52, .xls = 56).
+' Saves the workbook to the given path. Format is derived from the file
+' extension (.xlsx = 51, .xlsm = 52, .xls = 56, .csv = 6).
 ' -----------------------------------------------------------------------------
 Public Function SaveAs(ByVal FilePath As String) As Boolean
     On Error GoTo ErrHandler
@@ -192,7 +194,7 @@ Private Sub Class_Terminate()
     Me.CloseFile
 End Sub
 
-' --- Внутренние помощники ---------------------------------------------------
+' --- Internal helpers ---------------------------------------------------------
 
 Private Function FileFormatByExtension(ByVal FilePath As String) As Long
     Dim ext As String
