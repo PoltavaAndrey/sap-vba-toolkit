@@ -16,13 +16,22 @@
 - Подключение к уже запущенному SAP GUI (`clsSapConnector`)
 - Высокоуровневая работа с элементами управления SAP: поля ввода, кнопки,
   чекбоксы, вкладки, комбобоксы, статусная строка (`clsSapSession`)
+- Работа с табличными элементами SAP (классический `GuiTableControl`):
+  чтение/запись ячеек, скроллинг, выбор строк, выгрузка всей таблицы в
+  массив (`clsSapTable`)
 - Чтение внешних книг Excel в фоновом режиме, в т.ч. построчно как записи
   (`clsExcelReader`)
 - Создание новых книг Excel и запись в них данных/отчетов (`clsExcelWriter`)
+- Сопоставление двух массивов данных - резервирований и остатков на
+  складе - с поиском записей, которые можно полностью или частично закрыть
+  (`clsStockReservationMatcher`)
 - Файловое логирование с уровнями важности и дублированием в Immediate
   Window (`clsLogger` / `ILogger`)
 - Пример сквозного сценария "прочитать Excel -> обработать в SAP ->
-  выгрузить отчет" (`clsAppController`, `modMain`)
+  выгрузить отчет" и сценарий сопоставления остатков/резервирований на
+  основе данных из таблиц SAP (`clsAppController`, `modMain`)
+- Демонстрация алгоритма сопоставления на тестовых данных без подключения
+  к SAP (`modDemo`)
 
 ## Структура репозитория
 
@@ -31,16 +40,19 @@ src/
   Interfaces/
     ILogger.cls          - контракт логгера
   Classes/
-    clsLogger.cls         - файловый логгер (реализация ILogger)
-    clsSapConnector.cls   - подключение к SAP GUI Scripting
-    clsSapSession.cls     - обертка над GuiSession, работа с элементами SAP
-    clsExcelReader.cls    - чтение внешних Excel-файлов
-    clsExcelWriter.cls    - создание и запись новых Excel-файлов
-    clsAppController.cls  - фасад, собирающий сценарий воедино
+    clsLogger.cls                   - файловый логгер (реализация ILogger)
+    clsSapConnector.cls             - подключение к SAP GUI Scripting
+    clsSapSession.cls               - обертка над GuiSession, работа с элементами SAP
+    clsSapTable.cls                 - работа с табличными элементами SAP (GuiTableControl)
+    clsExcelReader.cls              - чтение внешних Excel-файлов
+    clsExcelWriter.cls              - создание и запись новых Excel-файлов
+    clsStockReservationMatcher.cls  - сопоставление резервирований и остатков
+    clsAppController.cls            - фасад, собирающий сценарии воедино
   Modules/
     modMain.bas           - точки входа макроса
     modConfig.bas         - константы и настройки проекта
     modUtils.bas          - общие вспомогательные функции
+    modDemo.bas           - демонстрация clsStockReservationMatcher на тестовых данных
 docs/
   ARCHITECTURE.md         - описание архитектуры и принципов
   USAGE.md                - инструкция по установке и запуску
@@ -66,6 +78,9 @@ docs/
 5. Настройте `clsAppController.ProcessSingleRecord` под реальные ID полей
    вашей транзакции SAP (получаются через "Помощь по сценарию" в SAP GUI).
 6. Запустите `modMain.RunDefault` или `modMain.RunScenario`.
+7. Чтобы посмотреть, как работает сопоставление резервирований и остатков,
+   без подключения к SAP запустите `modDemo.RunStockMatchingDemo` и
+   посмотрите результат в Immediate Window (`Ctrl+G`).
 
 Подробности - в [docs/USAGE.md](docs/USAGE.md) и
 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
@@ -77,3 +92,7 @@ docs/
 ID элементов SAP, структура входного Excel-файла и бизнес-логика
 обработки строк в `clsAppController` - специфичны для каждой компании и
 должны быть заменены под вашу транзакцию.
+
+## Лицензия
+
+MIT - см. [LICENSE](LICENSE).
