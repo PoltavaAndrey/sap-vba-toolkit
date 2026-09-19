@@ -11,14 +11,14 @@ Option Explicit
 
 '==============================================================================
 ' Interface:   ILogger
-' Назначение:  Абстракция логгера. Позволяет подменять реализацию
-'              (файл, Immediate Window, БД и т.п.) без изменения кода,
-'              который логированием пользуется.
+' Purpose:     Abstraction for a logger. Lets the concrete implementation
+'              (file, Immediate Window, database, etc.) be swapped without
+'              changing the code that performs the logging.
 '
-' Использование:
+' Usage:
 '   Dim logger As ILogger
 '   Set logger = New clsLogger
-'   logger.Log llInfo, "Сообщение"
+'   logger.Log llInfo, "Message"
 '==============================================================================
 
 Public Enum LogLevel
@@ -28,10 +28,10 @@ Public Enum LogLevel
     llError = 3
 End Enum
 
-' Записать одно сообщение в лог с указанным уровнем важности.
+' Write a single message to the log at the given severity level.
 Public Sub Log(ByVal Level As LogLevel, ByVal Message As String)
 End Sub
 
-' Явно закрыть лог (освободить файловый дескриптор и т.п.)
+' Explicitly close the log (release the file handle, etc.).
 Public Sub CloseLog()
 End Sub
