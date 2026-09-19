@@ -11,19 +11,19 @@ Option Explicit
 
 '==============================================================================
 ' Class:       clsSapSession
-' Назначение:  Обертка над объектом GuiSession, предоставляющая удобные
-'              высокоуровневые методы для работы с элементами управления
-'              SAP GUI (поля ввода, кнопки, чекбоксы, таблицы, вкладки и т.д.)
-'              без необходимости каждый раз писать FindById и приводить типы.
+' Purpose:     Wraps a GuiSession object and exposes convenient high-level
+'              methods for working with SAP GUI controls (input fields,
+'              buttons, checkboxes, tables, tabs, etc.) without having to
+'              write FindById and cast types every time.
 '
-' Замечание:   Все Id элементов копируются из SAP через
-'              "Помощь по сценарию" (F6 / кнопка со значком в статусной строке)
-'              либо через встроенный SAP Scripting Recorder.
+' Note:        All control IDs are copied from SAP using "Script Recording
+'              and Playback" (F6 / the icon in the status bar) or by hovering
+'              a field with the built-in SAP scripting helper.
 '
-' Пример использования:
+' Example:
 '   sapSession.StartTransaction "ME21N"
 '   sapSession.SetText "wnd[0]/usr/ctxtEKKO-BSART", "NB"
-'   sapSession.ClickButton "wnd[0]/tbar[0]/btn[11]" ' Сохранить
+'   sapSession.ClickButton "wnd[0]/tbar[0]/btn[11]" ' Save
 '==============================================================================
 
 Private Const MODULE_NAME As String = "clsSapSession"
@@ -38,7 +38,8 @@ Public Sub Init(ByVal RawSession As Object, ByVal Logger As ILogger)
 End Sub
 
 ' -----------------------------------------------------------------------------
-' Запускает транзакцию по коду (аналог ввода кода в поле команд).
+' Starts a transaction by code (equivalent to typing the code into the
+' command field).
 ' -----------------------------------------------------------------------------
 Public Sub StartTransaction(ByVal TCode As String)
     LogAction "StartTransaction(" & TCode & ")"
@@ -51,7 +52,7 @@ Public Sub EndTransaction()
 End Sub
 
 ' -----------------------------------------------------------------------------
-' Установить текстовое значение в поле ввода (GuiTextField, GuiCTextField и т.п.)
+' Sets the text value of an input field (GuiTextField, GuiCTextField, etc.)
 ' -----------------------------------------------------------------------------
 Public Function SetText(ByVal ControlId As String, ByVal Value As String) As Boolean
     On Error GoTo ErrHandler
@@ -67,7 +68,7 @@ ErrHandler:
 End Function
 
 ' -----------------------------------------------------------------------------
-' Прочитать текстовое значение поля.
+' Reads the text value of a field.
 ' -----------------------------------------------------------------------------
 Public Function GetText(ByVal ControlId As String) As String
     On Error GoTo ErrHandler
@@ -80,7 +81,7 @@ ErrHandler:
 End Function
 
 ' -----------------------------------------------------------------------------
-' Нажать кнопку (GuiButton) или "нажимаемый" элемент со свойством Press.
+' Presses a button (GuiButton) or any "pressable" control with a Press method.
 ' -----------------------------------------------------------------------------
 Public Function ClickButton(ByVal ControlId As String) As Boolean
     On Error GoTo ErrHandler
@@ -96,7 +97,7 @@ ErrHandler:
 End Function
 
 ' -----------------------------------------------------------------------------
-' Выбрать вкладку (GuiTab).
+' Selects a tab (GuiTab).
 ' -----------------------------------------------------------------------------
 Public Function SelectTab(ByVal ControlId As String) As Boolean
     On Error GoTo ErrHandler
@@ -112,7 +113,7 @@ ErrHandler:
 End Function
 
 ' -----------------------------------------------------------------------------
-' Установить состояние чекбокса (GuiCheckBox).
+' Sets the state of a checkbox (GuiCheckBox).
 ' -----------------------------------------------------------------------------
 Public Function SetCheckBox(ByVal ControlId As String, ByVal Checked As Boolean) As Boolean
     On Error GoTo ErrHandler
@@ -128,7 +129,7 @@ ErrHandler:
 End Function
 
 ' -----------------------------------------------------------------------------
-' Выбрать значение в выпадающем списке (GuiComboBox) по ключу.
+' Selects a value in a dropdown (GuiComboBox) by key.
 ' -----------------------------------------------------------------------------
 Public Function SelectComboBoxItem(ByVal ControlId As String, ByVal Key As String) As Boolean
     On Error GoTo ErrHandler
@@ -144,8 +145,8 @@ ErrHandler:
 End Function
 
 ' -----------------------------------------------------------------------------
-' Отправить функциональную клавишу (0 = Enter, 3 = F3/Назад, 11 = Сохранить,
-' 15 = F12/Отмена и т.д. - см. таблицу VKey в документации SAP).
+' Sends a function key (0 = Enter, 3 = F3/Back, 11 = Save, 15 = F12/Cancel,
+' etc. - see the SAP VKey code table in the documentation).
 ' -----------------------------------------------------------------------------
 Public Sub SendVKey(ByVal KeyCode As Integer)
     LogAction "SendVKey(" & KeyCode & ")"
@@ -153,7 +154,7 @@ Public Sub SendVKey(ByVal KeyCode As Integer)
 End Sub
 
 ' -----------------------------------------------------------------------------
-' Прочитать текст строки статуса (сообщение об ошибке/успехе после действия).
+' Reads the status bar text (an error/success message shown after an action).
 ' -----------------------------------------------------------------------------
 Public Function GetStatusBarText() As String
     On Error GoTo ErrHandler
@@ -165,8 +166,8 @@ ErrHandler:
 End Function
 
 ' -----------------------------------------------------------------------------
-' Проверка наличия элемента без выброса исключения (полезно перед обращением
-' к опциональным полям/всплывающим окнам).
+' Checks whether a control exists without raising an exception (useful before
+' touching optional fields/popup windows).
 ' -----------------------------------------------------------------------------
 Public Function ControlExists(ByVal ControlId As String) As Boolean
     On Error Resume Next
@@ -177,14 +178,38 @@ Public Function ControlExists(ByVal ControlId As String) As Boolean
 End Function
 
 ' -----------------------------------------------------------------------------
-' Прямой доступ к "сырому" GuiSession для нестандартных случаев,
-' не покрытых обертками выше.
+' Returns a clsSapTable wrapper for a classic dynpro table control
+' (GuiTableControl), e.g. the item table in ME21N/ME22N/ME23N/VA01, etc.
+' Not applicable to ALV Grid controls (GuiGridView) - those are exposed via
+' a different scripting API and are out of scope for this toolkit.
+' -----------------------------------------------------------------------------
+Public Function GetTable(ByVal ControlId As String) As clsSapTable
+    On Error GoTo ErrHandler
+
+    Dim rawTable As Object
+    Set rawTable = mSession.FindById(ControlId)
+
+    Dim wrapper As New clsSapTable
+    wrapper.Init rawTable, mLogger
+
+    Set GetTable = wrapper
+    LogAction "GetTable(" & ControlId & ")"
+    Exit Function
+
+ErrHandler:
+    LogError "GetTable", ControlId
+    Set GetTable = Nothing
+End Function
+
+' -----------------------------------------------------------------------------
+' Direct access to the "raw" GuiSession for non-standard cases not covered
+' by the wrappers above.
 ' -----------------------------------------------------------------------------
 Public Property Get RawSession() As Object
     Set RawSession = mSession
 End Property
 
-' --- Внутренние помощники ---------------------------------------------------
+' --- Internal helpers ---------------------------------------------------------
 
 Private Sub LogAction(ByVal Description As String)
     If Not mLogger Is Nothing Then
@@ -195,7 +220,7 @@ End Sub
 Private Sub LogError(ByVal MethodName As String, ByVal ControlId As String)
     If Not mLogger Is Nothing Then
         mLogger.Log llError, MODULE_NAME & "." & MethodName & _
-            ": не найден или недоступен элемент '" & ControlId & _
-            "' (" & Err.Number & " - " & Err.Description & ")"
+            ": control '" & ControlId & "' not found or unavailable" & _
+            " (" & Err.Number & " - " & Err.Description & ")"
     End If
 End Sub
