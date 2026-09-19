@@ -3,17 +3,17 @@ Option Explicit
 
 '==============================================================================
 ' Module:      modUtils
-' Назначение:  Общие вспомогательные функции, не привязанные к конкретному
-'              классу (проверка файлов, работа со строками и т.п.).
+' Purpose:     General-purpose helper functions not tied to a specific class
+'              (file checks, string helpers, etc.).
 '==============================================================================
 
-' Проверяет существование файла на диске.
+' Checks whether a file exists on disk.
 Public Function FileExists(ByVal FilePath As String) As Boolean
     FileExists = (Len(Dir(FilePath)) > 0)
 End Function
 
-' Проверяет существование папки; при отсутствии создает ее (в т.ч. вложенные
-' уровни, которых еще нет).
+' Checks whether a folder exists; creates it (including any missing parent
+' levels) if it does not.
 Public Sub EnsureFolderExists(ByVal FolderPath As String)
     Dim parts() As String
     Dim currentPath As String
@@ -30,12 +30,12 @@ Public Sub EnsureFolderExists(ByVal FolderPath As String)
     Next i
 End Sub
 
-' Возвращает текущую метку времени в формате, удобном для имен файлов.
+' Returns the current timestamp in a format convenient for file names.
 Public Function TimestampForFileName() As String
     TimestampForFileName = Format(Now, "yyyymmdd_hhnnss")
 End Function
 
-' Безопасное приведение к строке (Null/Empty -> "").
+' Safely casts a value to String (Null/Empty -> "").
 Public Function SafeStr(ByVal Value As Variant) As String
     If IsNull(Value) Or IsEmpty(Value) Then
         SafeStr = vbNullString
