@@ -12,19 +12,20 @@ Implements ILogger
 
 '==============================================================================
 ' Class:       clsLogger
-' Реализует:   ILogger
-' Назначение:  Простой файловый логгер с ротацией по дате и дублированием
-'              сообщений в Immediate Window (для отладки в редакторе VBA).
+' Implements:  ILogger
+' Purpose:     Simple file-based logger with daily rotation and optional
+'              mirroring of messages to the Immediate Window (for debugging
+'              in the VBA editor).
 '
-' Пример использования:
+' Example:
 '   Dim logger As ILogger
 '   Set logger = New clsLogger
-'   logger.Log llInfo, "Старт обработки"
+'   logger.Log llInfo, "Processing started"
 '   ...
 '   logger.CloseLog
 '
-' Формат строки лога:
-'   2026-01-15 10:23:45 | INFO    | Текст сообщения
+' Log line format:
+'   2026-01-15 10:23:45 | INFO    | Message text
 '==============================================================================
 
 Private Const MODULE_NAME As String = "clsLogger"
@@ -36,10 +37,10 @@ Private mMinLevel As LogLevel
 Private mEchoToImmediate As Boolean
 
 ' -----------------------------------------------------------------------------
-' Инициализация логгера.
-' logFolder      - папка для лог-файлов (будет создана при отсутствии)
-' minLevel       - минимальный уровень сообщений, которые реально пишутся
-' echoImmediate  - дублировать ли сообщения в Immediate Window (Debug.Print)
+' Initializes the logger.
+' LogFolder      - folder for log files (created automatically if missing)
+' MinLevel       - minimum severity level that is actually written
+' EchoImmediate  - whether to also mirror messages to Debug.Print
 ' -----------------------------------------------------------------------------
 Public Sub Init(Optional ByVal LogFolder As String = vbNullString, _
                  Optional ByVal MinLevel As LogLevel = llDebug, _
@@ -61,14 +62,14 @@ Public Sub Init(Optional ByVal LogFolder As String = vbNullString, _
     Open mLogFilePath For Append As #mFileNumber
     mIsOpen = True
 
-    Me.Log llInfo, "=== Логгер инициализирован. Файл: " & mLogFilePath & " ==="
+    Me.Log llInfo, "=== Logger initialized. File: " & mLogFilePath & " ==="
 End Sub
 
 Private Sub Class_Terminate()
     Me.CloseLog
 End Sub
 
-' --- Реализация ILogger -----------------------------------------------------
+' --- ILogger implementation --------------------------------------------------
 
 Private Sub ILogger_Log(ByVal Level As LogLevel, ByVal Message As String)
     Me.Log Level, Message
@@ -78,12 +79,12 @@ Private Sub ILogger_CloseLog()
     Me.CloseLog
 End Sub
 
-' --- Публичные методы (для прямого использования clsLogger) ----------------
+' --- Public methods (for direct use of clsLogger) ---------------------------
 
 Public Sub Log(ByVal Level As LogLevel, ByVal Message As String)
     Dim line As String
 
-    If Not mIsOpen Then Me.Init ' автоинициализация с параметрами по умолчанию
+    If Not mIsOpen Then Me.Init ' auto-initialize with default parameters
     If Level < mMinLevel Then Exit Sub
 
     line = Format(Now, "yyyy-mm-dd hh:nn:ss") & " | " & _
@@ -103,7 +104,7 @@ Public Sub CloseLog()
     End If
 End Sub
 
-' --- Вспомогательные методы --------------------------------------------------
+' --- Helpers ------------------------------------------------------------------
 
 Private Function PadLevel(ByVal Level As LogLevel) As String
     Select Case Level
